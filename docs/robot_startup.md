@@ -2,8 +2,9 @@
 
 From a powered-off robot to a first motion, then back to off. Allow about 10 minutes the first time.
 
+This guide assumes the station PC is already set up and tested. Setting up a new PC, or new to ROS? Start with [getting_started.md](getting_started.md).
+
 You need:
-- this workspace installed with `./setup.sh` (see the [README](../README.md))
 - the PC connected to the robot by Ethernet (robot `182.22.22.2`, PC `182.22.22.1`)
 - the gripper's USB cable plugged into the PC
 - someone standing at the teach pendant (the robot's touchscreen tablet) who can reach the **emergency stop** (red E-STOP button)
@@ -14,7 +15,7 @@ You need:
 
 - Find the red **emergency stop** button on the pendant. Pressing it stops the arm immediately, so press it whenever something looks wrong. Twist it to release it again.
 - Clear the space around the arm. The arm has hard-coded safety walls (a back wall, a right wall and the table), but they don't know about anything you've put on the table.
-- Run every new motion on **fake hardware** first (see [Without the robot](#without-the-robot) below).
+- Run every new motion slowly first (`velocity=0.05`) with a hand near the emergency stop.
 
 ---
 
@@ -25,78 +26,38 @@ You need:
 3. Tap **ON** to power the arm.
 4. Tap **START** to release the brakes. The arm clicks and may twitch slightly. This is normal.
 5. Tap **OK** (bottom right).
-6. Turn the **speed slider** (bottom of the Run screen) down to about **30%** for your first session. It scales every motion the PC sends.
 
 ## 2. Load the External Control program (pendant)
 
-The PC doesn't control the arm directly. A program running on the pendant, called **External Control**, receives motion commands from the PC. Load it now, but **don't press play yet**: the PC has to be listening first (step 4).
+The PC doesn't control the arm directly. A program running on the pendant, called **External Control**, receives motion commands from the PC. Load it now, but **don't press play yet**: the PC has to be listening first (notebook §1, step 2/3).
 
 1. On the main screen, tap **Run Program**.
 2. **File → Load Program**.
 3. Select **`ur_drive.urp`** (the program containing the External Control node) and tap **Open**.
-4. The External Control node must point at host **`182.22.22.1`**, port **`50002`**. You only need to check this once; it's saved in the program.
 
-## 3. Check the PC side
+## 3. Make it move
 
-Every terminal must load **only this workspace**. If your `~/.bashrc` sources another ROS workspace (such as an older copy of these packages), open a clean shell first. Otherwise the old copies run silently in place of these. The prompt for the clean shell is up to you; what matters is that only these two lines are sourced:
+> **Attention:** every terminal must load **only this workspace** (`ur5_station_ws`). If your `~/.bashrc` sources another ROS workspace, the old copies of these packages run silently in its place. Run these lines in EVERY new terminal, from the workspace folder (wherever you cloned `ur5_station_ws`):
+>
+> ```bash
+> cd <path-to>/ur5_station_ws
+> source /opt/ros/humble/setup.bash
+> source install/setup.bash
+> ```
+>
+> Or put them in `~/.bashrc` (replacing any other workspace `source` lines), using the full path there: `source <path-to>/ur5_station_ws/install/setup.bash`.
 
+The guided way is the demo notebook. Open it in VS Code:
+`src/ur5_station/notebooks/ur5_station_demo.ipynb` (inside the workspace folder)
+
+or start it from a sourced terminal in the workspace folder:
 ```bash
-source /opt/ros/humble/setup.bash
-source ~/workspace/ur5_station_ws/install/setup.bash
-ros2 pkg prefix ur5_bringup      # must print .../ur5_station_ws/install/ur5_bringup
+jupyter lab src/ur5_station/notebooks/ur5_station_demo.ipynb
 ```
 
-Then check that the robot and the gripper are both reachable:
+Run it top to bottom. §1 launches the robot from the PC and has you press play on the pendant, §3 moves the arm, §4 the gripper and §5 the sensors. **Before closing it, run §8 Shutdown** (see [4.1](#41-stop-the-ros-node-before-you-close-the-notebook)).
 
-```bash
-ping -c 3 182.22.22.2            # robot answers
-ls -l /dev/robotiq_gripper       # gripper port exists (udev rule from setup.sh)
-pgrep -af "ros2 launch"          # prints nothing: no other bringup is running
-```
-
-Only **one** bringup can talk to the robot and gripper at a time.
-
-## 4. Launch the robot (PC, terminal A)
-
-```bash
-ros2 launch ur5_bringup bringup_moveit_rviz.launch.py
-```
-
-The defaults are `robot_ip:=182.22.22.2`, `reverse_ip:=182.22.22.1` and `gripper_com_port:=/dev/robotiq_gripper`. Override any of them on the command line, for example `gripper_com_port:=/dev/ttyUSB1` if the udev rule isn't installed.
-
-RViz opens and shows the arm. The terminal waits for the pendant.
-
-## 5. Press play (pendant)
-
-Press **▶ Play** on the External Control program and tap **continue** if a popup appears. Terminal A should print:
-
-```text
-Robot connected to reverse interface
-```
-
-Until that line appears, the arm ignores every command from the PC.
-
-## 6. Check that everything came up (PC, terminal B)
-
-```bash
-ros2 control list_controllers
-```
-
-All controllers should be **active** except `freedrive_mode_controller` and `joint_trajectory_controller`, which are inactive by design.
-
-In RViz, a back wall, a right wall and a table pad appear about 8 s after launch. MoveIt uses them as obstacles to plan around.
-
-## 7. Make it move
-
-The guided way is the demo notebook, run from a clean shell (step 3):
-
-```bash
-jupyter lab ~/workspace/ur5_station_ws/src/ur5_station/notebooks/ur5_station_demo.ipynb
-```
-
-Set `MODE = 'real'` and run it top to bottom. §3 moves the arm, §4 the gripper and §5 the sensors. **Before closing it, run §8 Shutdown** (see [8.1](#81-stop-the-ros-node-before-you-close-the-notebook)).
-
-The minimum in plain Python (`python3 first_move.py` from a clean shell):
+The minimum in plain Python (`python3 first_move.py` from a sourced terminal, with the robot launched and playing as in notebook §1, steps 2/3 and 3/3):
 
 ```python
 import rclpy
@@ -129,9 +90,9 @@ rclpy.shutdown()
 
 `velocity` and `acceleration` are fractions of the arm's maximum speed (0.1 = 10%), on top of the pendant's speed slider.
 
-## 8. Shut down
+## 4. Shut down
 
-### 8.1 Stop the ROS node before you close the notebook
+### 4.1 Stop the ROS node before you close the notebook
 
 > **Always run the notebook's §8 Shutdown cells (`executor.shutdown()` and `rclpy.shutdown()`)
 > before you close the notebook.** Then stop the kernel: **Kernel → Shut Down Kernel**.
@@ -145,27 +106,15 @@ If this has already happened, see the *DIGIT can't be opened* row under [Trouble
 
 A plain Python script does the same cleanup with the last two lines (`executor.shutdown()` / `rclpy.shutdown()`).
 
-### 8.2 Stop the bringup (PC)
+### 4.2 Stop the bringup (PC)
 
-Press `Ctrl+C` in terminal A.
+Press `Ctrl+C` in the terminal running the bringup (notebook §1, step 2/3).
 
-### 8.3 Turn off the robot (pendant)
+### 4.3 Turn off the robot (pendant)
 
 1. Press **■** (the square Stop symbol) to stop the External Control program.
 2. Tap **File → Exit**.
 3. **Hold the arm with your hand**, then tap **Shut down robot**. The arm might sag as its power cuts out, so support it until it's fully off.
-
----
-
-## Without the robot
-
-The same packages run with simulated hardware. Nothing physical moves, so use this to try out new motions first:
-
-```bash
-ros2 launch ur5_bringup bringup_moveit_rviz.launch.py use_fake_hardware:=true
-```
-
-In the notebook, set `MODE = 'fake'`. Freedrive and gripper force control are skipped in fake mode.
 
 ---
 
@@ -174,9 +123,9 @@ In the notebook, set `MODE = 'fake'`. Freedrive and gripper force control are sk
 | Symptom | Cause / fix |
 |---|---|
 | `/joint_states did not arrive within 15s` | The notebook and the bringup can't see each other. Both must use the **same** `ROS_DOMAIN_ID` and source **this** workspace. Compare `echo $ROS_DOMAIN_ID` and `ros2 pkg prefix ur5_bringup` in both terminals. |
-| Arm doesn't move, no error | External Control isn't playing (step 5), or the terminal never printed `Robot connected to reverse interface`. |
+| Arm doesn't move, no error | External Control isn't playing (notebook §1, step 3/3), or the terminal never printed `Robot connected to reverse interface`. `ros2 control list_controllers` should show every controller **active** except `freedrive_mode_controller` and `joint_trajectory_controller`. |
 | Pendant: *cannot connect* to External Control | The PC isn't listening yet (launch first, then press play), or the host/port in the program is wrong (`182.22.22.1:50002`). On the PC, `ss -ltnp \| grep 500` should show ports 50001–50004 while the bringup runs. |
-| `ping 182.22.22.2` fails / `No route to host` | Check the Ethernet cable and that the pendant is powered on. If the PC uses a USB Ethernet adapter, keep it off a shared USB hub. A RealSense camera on the same hub has knocked it offline before; plug it straight into the PC. |
+| Launch can't reach the robot / `ping 182.22.22.2` fails / `No route to host` | Check the Ethernet cable and that the pendant is powered on. If the PC uses a USB Ethernet adapter, keep it off a shared USB hub. A RealSense camera on the same hub has knocked it offline before; plug it straight into the PC. |
 | Gripper errors, `Modbus exception`, or no `/dev/robotiq_gripper` | Another process holds the port (`fuser /dev/robotiq_gripper`); only one bringup at a time. If the symlink is missing, re-run `./setup.sh` or pass `gripper_com_port:=/dev/ttyUSBn` (`ls /dev/ttyUSB*`). |
 | DIGIT can't be opened / device busy, or two nodes with the same name | A notebook was closed without §8 Shutdown and its kernel is still running. Find what holds the camera with `fuser -v /dev/v4l/by-id/usb-Facebook_DIGIT_*-video-index0`, then shut that kernel down in Jupyter (**Running Terminals and Kernels** panel), or `kill <pid>`. |
 | Arm moves very slowly | Pendant speed slider is low. `ros2 topic echo /speed_scaling_state_broadcaster/speed_scaling --once` shows it (100.0 = full). |

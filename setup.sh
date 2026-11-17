@@ -106,9 +106,6 @@ Done. In every new terminal:
     source /opt/ros/humble/setup.bash
     source $WS/install/setup.bash
 
-Try it without the robot first:
-
-    ros2 launch ur5_bringup bringup_moveit_rviz.launch.py use_fake_hardware:=true
-
-Then open src/ur5_station/notebooks/ur5_station_demo.ipynb (MODE = 'fake').
+Next: docs/getting_started.md (simulation + one-time robot setup),
+then docs/robot_startup.md (real robot).
 EOF
