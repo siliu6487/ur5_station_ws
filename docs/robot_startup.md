@@ -33,8 +33,7 @@ The PC doesn't control the arm directly. A program running on the pendant, calle
 
 1. On the main screen, tap **Run Program**.
 2. **File → Load Program**.
-3. Select the program that contains the External Control node and tap **Open**.
-   > TODO(confirm): the program file name on this robot, e.g. `ur_driver.urp`.
+3. Select **`ur_drive.urp`** (the program containing the External Control node) and tap **Open**.
 4. The External Control node must point at host **`182.22.22.1`**, port **`50002`**. You only need to check this once; it's saved in the program.
 
 ## 3. Check the PC side
