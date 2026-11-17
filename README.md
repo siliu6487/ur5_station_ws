@@ -44,6 +44,8 @@ and work through `src/ur5_station/notebooks/ur5_station_demo.ipynb` with `MODE =
 
 ## Real robot
 
+**Step-by-step, from power-on to first motion and shutdown: [docs/robot_startup.md](docs/robot_startup.md).**
+
 One-time setup that a script cannot do:
 
 1. **Teach pendant:** install the *External Control* URCap and set its host IP to

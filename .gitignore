@@ -13,3 +13,7 @@ src/deps/
 
 # Recordings
 data/
+
+# Editor / notebook state
+.vscode/
+.ipynb_checkpoints/
