@@ -1,0 +1,3 @@
+controller_manager:
+  ros__parameters:
+    update_rate: 125  # Hz — matches RTDE frequency supported by this robot's firmware

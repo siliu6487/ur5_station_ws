@@ -1,0 +1,15 @@
+build/
+install/
+log/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.bag
+*.db3
+*.mcap
+
+# Source dependencies pulled by setup.sh (vcs import < deps.repos)
+src/deps/
+
+# Recordings
+data/

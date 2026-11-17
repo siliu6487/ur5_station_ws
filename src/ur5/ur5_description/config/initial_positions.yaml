@@ -1,0 +1,26 @@
+# Initial joint positions for mock/simulation startup.
+#
+# ONLY used when use_fake_hardware:=true — with a real robot the driver reports
+# the arm's actual state and this file is ignored. Loaded by ur5.urdf.xacro into
+# the ros2_control mock hardware, so it is what RViz shows at launch.
+#
+# Keys are joint names WITHOUT tf_prefix — the ros2_control macro adds the
+# prefix (left_) internally. Order below is the canonical UR5 order, matching
+# ARM_JOINT_ORDER in robot_motion_client.py.
+#
+# Kept in sync with NAMED_POSES['home'] in
+#   ur5_station/ur5_station/robot_motion_client.py
+# so that a fake-hardware session starts where goto('home') would put the arm,
+# instead of somewhere the notebook then has to travel from.
+#
+# To re-capture from the real robot: jog to the desired pose, then
+#   ros2 run ur5_bringup print_arm_joint_state.py
+# which prints a copy-paste-ready block for this file (prefix already stripped).
+#
+# Pose (updated 2026-07-28): NAMED_POSES: 'home', 'ready', 'poke_ready'
+shoulder_pan_joint:   0.4138594866
+shoulder_lift_joint: -2.3915308158
+elbow_joint:         -2.1292784850
+wrist_1_joint:       -0.5193236510
+wrist_2_joint:       -2.3556557337
+wrist_3_joint:       -0.6172254721

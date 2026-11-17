@@ -1,0 +1,132 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://wiki.ros.org/xacro" name="ur5_robotiq">
+
+  <!-- ===== Hardware / simulation arguments ===== -->
+  <xacro:arg name="robot_ip"            default="0.0.0.0"/>
+  <xacro:arg name="use_fake_hardware"   default="false"/>
+  <xacro:arg name="mock_sensor_commands" default="false"/>
+  <xacro:arg name="headless_mode"       default="false"/>
+  <xacro:arg name="gripper_com_port"          default="/dev/robotiq_gripper"/>
+  <xacro:arg name="use_fake_gripper_hardware" default="false"/>
+
+  <!-- UR driver script / recipe files (leave empty for mock hardware) -->
+  <xacro:arg name="script_filename"         default=""/>
+  <xacro:arg name="output_recipe_filename"  default=""/>
+  <xacro:arg name="input_recipe_filename"   default=""/>
+  <xacro:arg name="reverse_ip"             default="0.0.0.0"/>
+  <xacro:arg name="reverse_port"           default="50001"/>
+  <xacro:arg name="script_sender_port"     default="50002"/>
+  <xacro:arg name="trajectory_port"        default="50003"/>
+  <xacro:arg name="script_command_port"    default="50004"/>
+
+  <xacro:arg name="initial_positions_file"
+    default="$(find ur5_description)/config/initial_positions.yaml"/>
+  <xacro:arg name="left_mount_xyz" default="0.645 0.635 1.275"/>
+  <xacro:arg name="left_mount_rpy" default="-2.356 0 -1.57"/>
+
+  <!-- xacro:property so load_yaml can reference it at parse time -->
+  <xacro:property name="initial_positions_file"
+    value="$(arg initial_positions_file)"/>
+
+  <!-- ===== Includes ===== -->
+  <xacro:include filename="$(find ur_description)/urdf/ur_macro.xacro"/>
+  <xacro:include filename="$(find robotiq_description)/urdf/robotiq_2f_85_macro.urdf.xacro"/>
+
+  <!-- ===== Scene links ===== -->
+  <link name="world"/>
+
+  <!-- Physical aluminium frame that holds the arm -->
+  <link name="frame">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="27.21"/>
+      <inertia ixx="5.01" ixy="0" ixz="0"
+               iyy="5.07" iyz="0"
+               izz="3.20"/>
+    </inertial>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://ur5_description/meshes/UR5Frame.STL"/>
+      </geometry>
+    </collision>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://ur5_description/meshes/UR5Frame.STL"/>
+      </geometry>
+    </visual>
+  </link>
+
+  <joint name="frame_to_world" type="fixed">
+    <parent link="world"/>
+    <child  link="frame"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ===== UR5 kinematic description (left_ prefix) ===== -->
+  <xacro:ur_robot
+    name="left_ur5"
+    tf_prefix="left_"
+    parent="frame"
+    joint_limits_parameters_file="$(find ur_description)/config/ur5/joint_limits.yaml"
+    kinematics_parameters_file="$(find ur5_description)/config/calibration.yaml"
+    physical_parameters_file="$(find ur_description)/config/ur5/physical_parameters.yaml"
+    visual_parameters_file="$(find ur_description)/config/ur5/visual_parameters.yaml"
+    use_fake_hardware="$(arg use_fake_hardware)"
+    fake_sensor_commands="$(arg mock_sensor_commands)"
+    headless_mode="$(arg headless_mode)"
+    initial_positions="${xacro.load_yaml(initial_positions_file)}"
+    robot_ip="$(arg robot_ip)"
+    script_filename="$(arg script_filename)"
+    output_recipe_filename="$(arg output_recipe_filename)"
+    input_recipe_filename="$(arg input_recipe_filename)"
+    reverse_ip="$(arg reverse_ip)"
+    reverse_port="$(arg reverse_port)"
+    script_sender_port="$(arg script_sender_port)"
+    trajectory_port="$(arg trajectory_port)"
+    script_command_port="$(arg script_command_port)">
+    <!-- Mounting pose on the frame, adapted from BIMUR's left-arm workcell. -->
+    <origin xyz="$(arg left_mount_xyz)" rpy="$(arg left_mount_rpy)"/>
+  </xacro:ur_robot>
+
+  <!-- ===== Robotiq 2F-85 gripper (left_ prefix) ===== -->
+  <!--
+    Attached to left_tool0 — the robotiq_description macro expects the standard
+    UR tool0 frame as its parent. Attaching to flange/ee_link gives wrong orientation.
+    Actuated joint: left_robotiq_85_left_knuckle_joint  (0.0 = open, 0.8 = closed)
+  -->
+  <xacro:robotiq_gripper
+    name="left_robotiq_gripper"
+    prefix="left_"
+    parent="left_tool0"
+    use_fake_hardware="$(arg use_fake_gripper_hardware)"
+    fake_sensor_commands="$(arg mock_sensor_commands)"
+    com_port="$(arg gripper_com_port)">
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </xacro:robotiq_gripper>
+
+  <!-- ===== Eye-to-hand camera (Intel RealSense D455) ===== -->
+  <!--
+    Fixed table-mounted camera. The pose below is the easy_handeye2
+    eye-on-base calibration result (collected 2026-06-05), expressed as
+    left_base_link -> camera_link.
+
+    The calibration solved for left_base_link -> camera_color_optical_frame;
+    this joint targets camera_link (the camera's ROOT frame) instead, computed
+    as (base->optical) * inv(camera_link->optical). The realsense2_camera
+    driver publishes camera_link -> camera_color_frame -> camera_color_optical_frame
+    underneath this link, so the full tree connects without giving any frame
+    two parents.
+
+    To re-run: ros2 launch ur5_handeye handeye_calibration.launch.py
+  -->
+  <link name="camera_link"/>
+  <joint name="left_base_link_to_camera" type="fixed">
+    <parent link="left_base_link"/>
+    <child  link="camera_link"/>
+    <origin xyz="-0.309499 -0.247246 -0.425398"
+            rpy="-1.805888 -1.492624 0.402049"/>
+  </joint>
+
+</robot>

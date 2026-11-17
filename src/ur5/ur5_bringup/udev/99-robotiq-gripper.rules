@@ -1,0 +1,18 @@
+# Robotiq 2F-85 gripper, reached over an FTDI USB-to-RS485 adapter.
+#
+# ttyUSB numbering is not stable across boots or replugs, so match on the
+# adapter's serial number and hand the launch files a fixed name. This is the
+# /dev/robotiq_gripper that ur5.launch.py's gripper_com_port defaults to.
+#
+# ID_MM_DEVICE_IGNORE keeps ModemManager off the port: it treats this adapter
+# as a modem candidate (ID_MM_CANDIDATE=1) and probes it with AT commands for
+# several seconds after enumeration, which collides with a driver that starts
+# at the same time.
+#
+# Install:
+#   sudo cp 99-robotiq-gripper.rules /etc/udev/rules.d/
+#   sudo udevadm control --reload-rules && sudo udevadm trigger
+#
+# Verify:  ls -l /dev/robotiq_gripper
+
+SUBSYSTEM=="tty", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="6015", ATTRS{serial}=="DA2O31UL", SYMLINK+="robotiq_gripper", GROUP="dialout", MODE="0660", ENV{ID_MM_DEVICE_IGNORE}="1"

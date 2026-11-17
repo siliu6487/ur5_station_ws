@@ -1,0 +1,7 @@
+# OPTIONAL — only for the ReSpeaker microphone (audio_recorder.py, sensor_bringup audio node).
+#   ./setup.sh --with-audio
+repositories:
+  audio_common:
+    type: git
+    url: https://github.com/ros-drivers/audio_common.git
+    version: 8b1785bb59cc5129476b6f3e4eeee6c541dc0cb0

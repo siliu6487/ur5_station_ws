@@ -1,0 +1,7 @@
+# Source dependencies not available from apt. setup.sh imports these into src/deps/.
+# Pinned to commits that are known to work with this repo.
+repositories:
+  pymoveit2:
+    type: git
+    url: https://github.com/AndrejOrsula/pymoveit2.git
+    version: 680bdf9e0381bb2abac78c7835a115bcd1086d5f
